@@ -22,14 +22,10 @@
     </div>
 
     <div class="container deactivated" id="vwmain">
-        <div class="gromp">
-            <h3 class="headline">Visa Warden<br><span class="plain">TLSContact Visa Bot</span></h3>
-            <h4>You are logged in as <span class="headline" id="vwusername"></span></h4>
-            <p class="fine_print">You are on the <span class="headline" id="tier_type"></span> tier<br>Entitling you to:
-                <span class="headline" id="tier_desc"></span>
-            </p>
-            <p class="fine_print deactivated" id="agent_yap">You have <span class='headline' id='cred_count'></span> credits remaining</p>
-        </div>
+        <span id="vwusername" style="display:none"></span>
+        <span id="tier_type" style="display:none"></span>
+        <span id="tier_desc" style="display:none"></span>
+        <span id="agent_yap" style="display:none"><span id="cred_count"></span></span>
         <div class="detail_region" id="ext_controls">
 
             <h4 class="region_header">Status - <span id="status"></span></h4>
@@ -107,6 +103,24 @@
             <p class="fine_print" id="log_status"></p>
         </div>
 
+
+        <div class="detail_region" id="telegram_settings">
+            <h4 class="region_header">Telegram Notifications</h4>
+            <div class="frow">
+                <label for="tg_enabled">Enable Telegram</label>
+                <input type="checkbox" id="tg_enabled" name="tg_enabled" />
+            </div>
+            <div class="frow">
+                <label for="tg_bot_token">Bot Token</label>
+                <input class="chunky" id="tg_bot_token" type="text" placeholder="123456:ABC-DEF..." />
+            </div>
+            <div class="frow">
+                <label for="tg_chat_id">Chat ID</label>
+                <input class="chunky" id="tg_chat_id" type="text" placeholder="e.g. 123456789" />
+            </div>
+            <button class="chunky btn purp" id="tg_test">Send Test Message</button>
+            <p class="fine_print" id="tg_status"></p>
+        </div>
 
         <div class="detail_region disabled" id="filter_settings">
             <h4 class="region_header">Advanced Filtering</h4>

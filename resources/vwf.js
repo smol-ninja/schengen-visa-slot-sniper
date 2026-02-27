@@ -53,6 +53,11 @@ let premium_slots = document.getElementById('prime_slots')
 let premium_days = document.getElementsByName('days');
 
 
+let tg_enabled = document.getElementById('tg_enabled')
+let tg_bot_token = document.getElementById('tg_bot_token')
+let tg_chat_id = document.getElementById('tg_chat_id')
+let tg_test_btn = document.getElementById('tg_test')
+
 let rr = document.getElementById('refresh_rate')
 let ss = document.getElementById('start_scan')
 let tls_dest = document.getElementById('tlsdest')
@@ -96,6 +101,44 @@ premium_last_time.addEventListener("click", (e) => {
 })
 premium_days.forEach((e) => {
     e.addEventListener("input", store_tls_details);
+})
+
+tg_enabled.addEventListener("click", (e) => {
+    store_val("tg_enabled", e.target.checked)
+})
+tg_bot_token.addEventListener("input", (e) => {
+    store_val("tg_bot_token", e.target.value)
+})
+tg_chat_id.addEventListener("input", (e) => {
+    store_val("tg_chat_id", e.target.value)
+})
+tg_test_btn.addEventListener("click", async () => {
+    const status_el = document.getElementById("tg_status");
+    const token = tg_bot_token.value;
+    const chat = tg_chat_id.value;
+    if (!token || !chat) {
+        status_el.innerText = "Enter bot token and chat ID first";
+        status_el.style = 'color:red';
+        return;
+    }
+    try {
+        const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chat_id: chat, text: "Visa Warden test — Telegram notifications working!" })
+        });
+        if (res.ok) {
+            status_el.innerText = "Test message sent!";
+            status_el.style = 'color:green';
+        } else {
+            const err = await res.json();
+            status_el.innerText = "Failed: " + (err.description || res.status);
+            status_el.style = 'color:red';
+        }
+    } catch (e) {
+        status_el.innerText = "Network error: " + e.message;
+        status_el.style = 'color:red';
+    }
 })
 
 logout_btn.addEventListener("click", async (e) => {
@@ -464,6 +507,19 @@ function set_stored_tls_details() {
         if (res.reschedule_mode != undefined)
             reschedule_toggle.checked = res.reschedule_mode
     })
+
+    get_val("tg_enabled").then((res) => {
+        if (res.tg_enabled != undefined)
+            tg_enabled.checked = res.tg_enabled
+    })
+    get_val("tg_bot_token").then((res) => {
+        if (res.tg_bot_token != undefined)
+            tg_bot_token.value = res.tg_bot_token
+    })
+    get_val("tg_chat_id").then((res) => {
+        if (res.tg_chat_id != undefined)
+            tg_chat_id.value = res.tg_chat_id
+    })
 }
 
 
@@ -507,6 +563,10 @@ function clear_cache() {
     store_val("reschedule_mode", false);
     store_val("current_booking", null);
     store_val("vw_logs", []);
+    // Telegram
+    store_val("tg_enabled", false);
+    store_val("tg_bot_token", null);
+    store_val("tg_chat_id", null);
 }
 
 async function check_cf_blocked() {

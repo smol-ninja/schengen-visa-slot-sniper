@@ -215,6 +215,25 @@ async function autobook_appointment(check_uri, lang, centre, domain, date, time,
     let creating = chrome.tabs.create({ url: `https://${domain}`, active: false, index: 0 }) // Likely JUST the clearance needed to change.
 }
 
+async function send_telegram_msg(text) {
+    const tg = await get_val("tg_enabled");
+    if (!tg.tg_enabled) return;
+
+    const token = (await get_val("tg_bot_token")).tg_bot_token;
+    const chat_id = (await get_val("tg_chat_id")).tg_chat_id;
+    if (!token || !chat_id) return;
+
+    try {
+        await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chat_id, text, parse_mode: "HTML" })
+        });
+    } catch (e) {
+        log_error("Telegram send failed: " + e.message);
+    }
+}
+
 async function create_notification(noti_name, msg, interaction) {
     return await chrome.notifications.create(noti_name, {
         type: "basic",
@@ -380,6 +399,11 @@ async function parse_appts(appt_info, check_uri, domain) {
     if (j.length != 0) {
         log_info("Appointment found.");
         await create_notification("appt_found", "An appointment has been found!", true);
+
+        let slot_count = j.reduce((sum, day) => sum + day.slots.filter(s => s.labels.length > 0).length, 0);
+        let dates = j.map(d => d.day).join(", ");
+        send_telegram_msg(`<b>Visa Warden</b>\nAppointment found! ${slot_count} slot(s) on: ${dates}`);
+
         log("Found an appointment!")
         const is_autobook = await get_val("vw_autobooking")
         if (is_autobook.vw_autobooking > 0) {
