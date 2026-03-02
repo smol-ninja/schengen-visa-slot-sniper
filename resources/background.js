@@ -119,8 +119,8 @@ async function get_hash_for_action(actionName, book_url, domain, chunkPagePath) 
 
     const find_text = hash_response.indexOf(chunkPagePath + '/page-')
     if (find_text != -1) {
-        start = find_text + chunkPagePath.length + 1
-        end = hash_response.indexOf('"', start)
+        let start = find_text + chunkPagePath.length + 1
+        let end = hash_response.indexOf('"', start)
         let snippet = hash_response.substring(start, end)
         log('Hash snippet: ' + snippet)
         hash_url = `https://${domain}/_next/static/chunks/app/%5Blang%5D/%5BgroupId%5D/workflow/${chunkPagePath}/${snippet}`
@@ -158,12 +158,12 @@ async function get_hash_for_action(actionName, book_url, domain, chunkPagePath) 
     }
 
     appt_pos -= 1
-    end = appt_pos
+    let end = appt_pos
 
     while (final_hash_response[end] != '"')
         end--;
 
-    start = end - 2
+    let start = end - 2
     while (final_hash_response[start] != '"')
         start--
 
@@ -193,8 +193,8 @@ async function get_cancel_hash(check_uri, domain) {
 }
 
 async function autobook_appointment(check_uri, lang, centre, domain, date, time, appt_type) {
-    wf = check_uri.indexOf('/workflow')
-    wf_start = wf - 1
+    let wf = check_uri.indexOf('/workflow')
+    let wf_start = wf - 1
     while (check_uri[wf_start] != '/')
         wf_start--
     wf_start++
@@ -217,7 +217,7 @@ async function autobook_appointment(check_uri, lang, centre, domain, date, time,
     // }
     log_info(`Booking with url ${book_url}`)
 
-    book_hash = await get_hash_for_action("bookAppointment", check_uri, domain)
+    let book_hash = await get_hash_for_action("bookAppointment", check_uri, domain)
 
     // In reschedule mode, get cancel hash to cancel existing booking first
     let cancel_data = null;
@@ -317,7 +317,7 @@ async function parse_appts(appt_info, check_uri, domain) {
     if (action_refs)
         log("DISCOVERY: appt-booking RSC action refs: " + JSON.stringify(action_refs));
 
-    av_start = appt_info.indexOf('availableAppointments')
+    let av_start = appt_info.indexOf('availableAppointments')
     if (av_start == -1) {
         let failed_attempts = (await get_val('sss_failed_attempts')).sss_failed_attempts
         if (failed_attempts == undefined || failed_attempts == null)
@@ -335,10 +335,10 @@ async function parse_appts(appt_info, check_uri, domain) {
 
     store_val('sss_failed_attempts', 0);
 
-    end = appt_info.indexOf(',"show', av_start)
+    let end = appt_info.indexOf(',"show', av_start)
     av_start = appt_info.indexOf('[', av_start)
-    appts = appt_info.substring(av_start, end)
-    j = JSON.parse(appts);
+    const appts = appt_info.substring(av_start, end)
+    const j = JSON.parse(appts);
     let time = new Date(Date.now())
     let ds = time.toLocaleTimeString();
     store_val("find_time", ds);
@@ -376,12 +376,12 @@ async function parse_appts(appt_info, check_uri, domain) {
                 return 2;
             }
 
-            centre_start = appt_info.indexOf("selectedLocation")
-            centre_end = appt_info.indexOf(',"', centre_start)
-            centre = appt_info.substring(centre_start + 19, centre_end - 1)
-            lang_start = appt_info.indexOf("lang")
-            lang_end = appt_info.indexOf(',"', lang_start + '"lang",'.length)
-            lang = appt_info.substring(lang_start + '"lang",'.length, lang_end - 1)
+            let centre_start = appt_info.indexOf("selectedLocation")
+            let centre_end = appt_info.indexOf(',"', centre_start)
+            let centre = appt_info.substring(centre_start + 19, centre_end - 1)
+            let lang_start = appt_info.indexOf("lang")
+            let lang_end = appt_info.indexOf(',"', lang_start + '"lang",'.length)
+            let lang = appt_info.substring(lang_start + '"lang",'.length, lang_end - 1)
 
             await autobook_appointment(check_uri, lang, centre, domain,
                 chosen_appt.out_date, chosen_appt.out_time, chosen_appt.out_type); // auto book here (always for 1, sometimes for 2)
@@ -423,7 +423,7 @@ async function get_tu() {
 }
 
 async function get_belgian_onboarding() {
-    res = await fetch('https://visaonweb.diplomatie.be/VisaApplication/MyList?draw=1&columns%5B0%5D%5Bdata%5D=VOWId&columns%5B0%5D%5Bname%5D=VOWUniqueId&columns%5B0%5D%5Bsearchable%5D=true&columns%5B0%5D%5Borderable%5D=true&columns%5B0%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B0%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B1%5D%5Bdata%5D=AppNum&columns%5B1%5D%5Bname%5D=ApplicationNumber&columns%5B1%5D%5Bsearchable%5D=true&columns%5B1%5D%5Borderable%5D=true&columns%5B1%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B1%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B2%5D%5Bdata%5D=2&columns%5B2%5D%5Bname%5D=&columns%5B2%5D%5Bsearchable%5D=true&columns%5B2%5D%5Borderable%5D=false&columns%5B2%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B2%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B3%5D%5Bdata%5D=St&columns%5B3%5D%5Bname%5D=Status&columns%5B3%5D%5Bsearchable%5D=false&columns%5B3%5D%5Borderable%5D=false&columns%5B3%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B3%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B4%5D%5Bdata%5D%5BId%5D=Id&columns%5B4%5D%5Bname%5D=&columns%5B4%5D%5Bsearchable%5D=false&columns%5B4%5D%5Borderable%5D=false&columns%5B4%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B4%5D%5Bsearch%5D%5Bregex%5D=false&order%5B0%5D%5Bcolumn%5D=0&order%5B0%5D%5Bdir%5D=desc&start=0&length=10&search%5Bvalue%5D=&search%5Bregex%5D=false&_=1769785962449',
+    let res = await fetch('https://visaonweb.diplomatie.be/VisaApplication/MyList?draw=1&columns%5B0%5D%5Bdata%5D=VOWId&columns%5B0%5D%5Bname%5D=VOWUniqueId&columns%5B0%5D%5Bsearchable%5D=true&columns%5B0%5D%5Borderable%5D=true&columns%5B0%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B0%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B1%5D%5Bdata%5D=AppNum&columns%5B1%5D%5Bname%5D=ApplicationNumber&columns%5B1%5D%5Bsearchable%5D=true&columns%5B1%5D%5Borderable%5D=true&columns%5B1%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B1%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B2%5D%5Bdata%5D=2&columns%5B2%5D%5Bname%5D=&columns%5B2%5D%5Bsearchable%5D=true&columns%5B2%5D%5Borderable%5D=false&columns%5B2%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B2%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B3%5D%5Bdata%5D=St&columns%5B3%5D%5Bname%5D=Status&columns%5B3%5D%5Bsearchable%5D=false&columns%5B3%5D%5Borderable%5D=false&columns%5B3%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B3%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B4%5D%5Bdata%5D%5BId%5D=Id&columns%5B4%5D%5Bname%5D=&columns%5B4%5D%5Bsearchable%5D=false&columns%5B4%5D%5Borderable%5D=false&columns%5B4%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B4%5D%5Bsearch%5D%5Bregex%5D=false&order%5B0%5D%5Bcolumn%5D=0&order%5B0%5D%5Bdir%5D=desc&start=0&length=10&search%5Bvalue%5D=&search%5Bregex%5D=false&_=1769785962449',
         { method: "GET" }
     ).then(async (result) => {
         if (result.status != 200) {
@@ -432,15 +432,15 @@ async function get_belgian_onboarding() {
             return false;
         }
 
-        j = await result.json()
-        data = j.data
-        id = data[0].Id
+        const j = await result.json()
+        const data = j.data
+        const id = data[0].Id
 
         return await fetch(`https://visaonweb.diplomatie.be/VisaApplication/CreateRdv?Id=${id}`,
             { method: "POST" }
         ).then(async (result) => {
-            j = await result.json()
-            onboarding_token = j.infoToSent;
+            const j2 = await result.json()
+            const onboarding_token = j2.infoToSent;
             return onboarding_token
         })
     })
@@ -449,18 +449,18 @@ async function get_belgian_onboarding() {
 }
 
 async function login_belgium(domain) {
-    resp = await fetch(domain, {
+    let resp = await fetch(domain, {
         method: "GET",
     }).then(async (result) => {
-        res_text = await result.text()
-        start = res_text.indexOf('__RequestVerificationToken')
-        end = start + "__RequestVerificationToken' type='hidden' value='".length
+        const res_text = await result.text()
+        let start = res_text.indexOf('__RequestVerificationToken')
+        let end = start + "__RequestVerificationToken' type='hidden' value='".length
         let token = res_text.slice(end, res_text.indexOf('"', end)) // Got request token.
 
         const user = await get_tu();
         const pass = await get_tp();
 
-        login_attempt = await fetch(domain, {
+        let login_attempt = await fetch(domain, {
             method: "POST",
             body: new URLSearchParams({
                 '__RequestVerificationToken': token,
@@ -468,7 +468,7 @@ async function login_belgium(domain) {
                 'Password': pass
             })
         }).then(async (result) => {
-            text = await result.text()
+            const text = await result.text()
             if (result.status != 302) {
                 if (text.indexOf('Invalid username') != -1) {
                     log("Failed to login 1...");
@@ -486,7 +486,7 @@ async function login_belgium(domain) {
                 return false;
             }
 
-            log(`Dest: https://welcome.visas-be.tlscontact.com/?onboarding_token=${token}`)
+            log_info("Belgian onboarding redirect")
             chrome.tabs.create({
                 url: `https://welcome.visas-be.tlscontact.com/?onboarding_token=${token}`,
                 active: false,
@@ -504,7 +504,6 @@ async function login_belgium(domain) {
 
 async function refresh_creds(domain) {
     set_refreshing(true);
-    let old_tab = chrome.tabs.getCurrent();
     chrome.storage.local.set({ "scanning": false })
     if (domain.indexOf('visas-be') != -1) {
         login_belgium("https://visaonweb.diplomatie.be/Account/Login?ReturnUrl=%2Fen")
@@ -571,13 +570,13 @@ async function check_appts(domain, app_id) {
     if (res == 429) {
         store_val("cf_blocked", true);
         store_val("scanning", false);
-        rr = await get_refresh_rate()
+        let rr = await get_refresh_rate()
         log_error(`Rate limit at ${rr}`)
         create_notification("rate_limit", "You have been rate limited. Your refresh rate is too low or you're opening the site too much while the bot is searching. Consider increasing it and trying again in a few hours and letting the bot work alone.", true);
         // set_status("Error sss_bg.002", "red");
         return false;
     }
-    else if (res == 403 || (await parse_appts(res, cur_month_url, domain) == 0)) {
+    else if (res == 403 || ((await parse_appts(res, cur_month_url, domain)) == 0)) {
         set_status("Refreshing Credentials", "yellow")
         refresh_creds(domain);
         return false;
@@ -592,7 +591,7 @@ async function check_appts(domain, app_id) {
     }
 
     log(`Current month: no appointments. Checking next month (${next_month}-${year})...`)
-    next_month_url = `${cur_month_url}?month=${next_month}-${year}`
+    let next_month_url = `${cur_month_url}?month=${next_month}-${year}`
     res = await fetch(next_month_url,
         {
             method: "GET",
@@ -641,7 +640,7 @@ async function check_appts(domain, app_id) {
 
 async function begin_search() {
     // check our shite
-    tls_obj = (await get_val('tls_details')).tls_details
+    let tls_obj = (await get_val('tls_details')).tls_details
     if (tls_obj == undefined) {
         set_status("Error sss_bg.006", "red");
         return (await chrome.storage.local.set({ "sss_tested": 0 }))
@@ -656,13 +655,13 @@ async function begin_search() {
 }
 
 async function store_val(name, val) {
-    obj = {}
+    const obj = {}
     obj[name] = val
     return await chrome.storage.local.set(obj)
 }
 
 async function check_noti_pipe() {
-    const noti_pipe = get_val("noti_pipe");
+    const noti_pipe = await get_val("noti_pipe");
     return noti_pipe;
 }
 
@@ -728,44 +727,23 @@ async function logURL(request) {
         if (element.name != "set-cookie")
             return
 
-        val = element.value
-        cookies = val.split("\n");
+        const val = element.value
+        const cookies = val.split("\n");
         cookies.forEach(async (cookie) => {
             if (cookie.indexOf("cf_clearance") != -1) {
-                clearance = cookie
-
                 log("Snatched clearance")
-                details = clearance.split(';')
-                cf = details[0]
-                cf = cf.slice('cf_clearance='.length)
-                domain = details[6] // Can this be in a different order? Doubt it.
-                raw_domain = domain.slice(' Domain='.length)
-                domain = `https://${raw_domain}`
-                res = await chrome.cookies.set(
+                const details = cookie.split(';')
+                const cf = details[0].slice('cf_clearance='.length)
+                const raw_domain = details[6].slice(' Domain='.length) // Can this be in a different order? Doubt it.
+                const domain_url = `https://${raw_domain}`
+                await chrome.cookies.set(
                     {
                         name: "cf_clearance",
                         value: cf,
-                        url: domain,
+                        url: domain_url,
                         domain: `.${raw_domain}`
                     }
                 )
-            }
-            else if (cookie.indexOf("cfwaitingroom") != -1) {
-                waitingroom = cookie
-                details = waitingroom.split(';')
-                cf_wait = details[0]
-                cf_wait = cf_wait.slice('__cfwaitingroom='.length)
-                domain = details[1] // Can this be in a different order? Doubt it.
-                raw_domain = domain.slice(' Domain='.length)
-                domain = `https://${raw_domain}`
-                // res = await chrome.cookies.set(
-                //     {
-                //         name: "__cfwaitingroom",
-                //         value: cf_wait,
-                //         url: domain,
-                //         domain: `.${raw_domain}`
-                //     }
-                // )
             }
         });
     });
@@ -805,9 +783,9 @@ async function initialize_listeners() {
         if (message == "request_focus") {
             // Focus!
             chrome.tabs.query({}).then((all_tabs) => {
-                chosen = null
-                for (i = 0; i < all_tabs.length; i++) {
-                    cur = all_tabs[i]
+                let chosen = null
+                for (let i = 0; i < all_tabs.length; i++) {
+                    const cur = all_tabs[i]
                     if (cur.url.indexOf("tlscontact") != -1) {
                         chosen = cur;
                         break

@@ -53,7 +53,7 @@ async function get_val(name) {
 }
 
 async function store_val(name, val) {
-    obj = {}
+    const obj = {}
     obj[name] = val
     return await chrome.storage.local.set(obj)
 }
@@ -78,7 +78,7 @@ async function set_refresh_timer(num) {
 }
 
 async function get_application_details() {
-    return (await chrome.storage.local.get('tls_details').tls_details)
+    return (await chrome.storage.local.get('tls_details')).tls_details
 }
 
 async function request_captcha(uri, type = 1) {
@@ -99,14 +99,14 @@ async function extract_application_id_from_groups() {
     // const blocked_element = document.getElementsByClassName('rounded-lg bg-white shadow-primary')
     // TODO: Potentially store them all and have a dropdown
 
-    result = get_val("ti").then((ti) => {
+    let result = get_val("ti").then((ti) => {
         const desired_id = ti.ti;
         // if (blocked_element.length >= 1) {
         //     // Assume blocked for 2 hours
         //     set_status("Rate Limited - Try again in an hour")
         // }
         // else {
-        for (i = 0; i < elements.length; i += 4) {
+        for (let i = 0; i < elements.length; i += 4) {
             const name = elements[i].textContent
             const app_id = elements[i + 1].textContent
             const location = elements[i + 2].textContent
@@ -125,7 +125,7 @@ async function extract_application_id_from_groups() {
                         // log(`Desired ID ${desired_id} does not match ${app_id}`)
                         continue
                     }
-                app_num = Number(app_id)
+                const app_num = Number(app_id)
                 return { app_num, name, location };
             }
         }
@@ -154,7 +154,7 @@ async function set_refreshing(val) {
 }
 
 async function handle_potential_cloudflare() {
-    is_cap = (document.body.innerText.indexOf("Ray ID") != -1) || (document.URL.indexOf("__cf_chl") != -1)
+    const is_cap = (document.body.innerText.indexOf("Ray ID") != -1) || (document.URL.indexOf("__cf_chl") != -1)
 
     if (is_cap) {
         let ca = (await get_val("captcha_attempts")).captcha_attempts
@@ -189,7 +189,7 @@ async function get_citizen_two_body(booking_info) {
     const appt_type = booking_info.body_data.appt_type;
     const captcha_token = await get_captcha_solution(booking_info.book_uri);
 
-    form_data = new FormData()
+    const form_data = new FormData()
     form_data.append('1_formGroupId', fgId)
     form_data.append('1_lang', lang)
     form_data.append('1_process', 'APPOINTMENT')
@@ -377,18 +377,18 @@ async function attempt_booking(booking_info) {
             return false;
         }
 
-        result = await response.text();
+        const result = await response.text();
         if (response.status == 200 || response.status == 303) {
             if (result == '') {
                 log_info("redirect success");
                 return verify_successful_booking(booking_info)
             }
 
-            lines = result.split("\n")
-            raw_json = lines[1].slice(2)
+            const lines = result.split("\n")
+            const raw_json = lines[1].slice(2)
             log(raw_json)
 
-            json = JSON.parse(raw_json)
+            const json = JSON.parse(raw_json)
 
             if (json['status'] == 'FAILED') {
                 log_error("Failed to book: " + JSON.stringify(json))
@@ -428,7 +428,7 @@ async function get_tu() {
 }
 
 async function get_belgian_onboarding() {
-    res = await fetch('https://visaonweb.diplomatie.be/VisaApplication/MyList?draw=1&columns%5B0%5D%5Bdata%5D=VOWId&columns%5B0%5D%5Bname%5D=VOWUniqueId&columns%5B0%5D%5Bsearchable%5D=true&columns%5B0%5D%5Borderable%5D=true&columns%5B0%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B0%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B1%5D%5Bdata%5D=AppNum&columns%5B1%5D%5Bname%5D=ApplicationNumber&columns%5B1%5D%5Bsearchable%5D=true&columns%5B1%5D%5Borderable%5D=true&columns%5B1%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B1%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B2%5D%5Bdata%5D=2&columns%5B2%5D%5Bname%5D=&columns%5B2%5D%5Bsearchable%5D=true&columns%5B2%5D%5Borderable%5D=false&columns%5B2%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B2%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B3%5D%5Bdata%5D=St&columns%5B3%5D%5Bname%5D=Status&columns%5B3%5D%5Bsearchable%5D=false&columns%5B3%5D%5Borderable%5D=false&columns%5B3%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B3%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B4%5D%5Bdata%5D%5BId%5D=Id&columns%5B4%5D%5Bname%5D=&columns%5B4%5D%5Bsearchable%5D=false&columns%5B4%5D%5Borderable%5D=false&columns%5B4%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B4%5D%5Bsearch%5D%5Bregex%5D=false&order%5B0%5D%5Bcolumn%5D=0&order%5B0%5D%5Bdir%5D=desc&start=0&length=10&search%5Bvalue%5D=&search%5Bregex%5D=false&_=1769785962449',
+    let res = await fetch('https://visaonweb.diplomatie.be/VisaApplication/MyList?draw=1&columns%5B0%5D%5Bdata%5D=VOWId&columns%5B0%5D%5Bname%5D=VOWUniqueId&columns%5B0%5D%5Bsearchable%5D=true&columns%5B0%5D%5Borderable%5D=true&columns%5B0%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B0%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B1%5D%5Bdata%5D=AppNum&columns%5B1%5D%5Bname%5D=ApplicationNumber&columns%5B1%5D%5Bsearchable%5D=true&columns%5B1%5D%5Borderable%5D=true&columns%5B1%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B1%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B2%5D%5Bdata%5D=2&columns%5B2%5D%5Bname%5D=&columns%5B2%5D%5Bsearchable%5D=true&columns%5B2%5D%5Borderable%5D=false&columns%5B2%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B2%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B3%5D%5Bdata%5D=St&columns%5B3%5D%5Bname%5D=Status&columns%5B3%5D%5Bsearchable%5D=false&columns%5B3%5D%5Borderable%5D=false&columns%5B3%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B3%5D%5Bsearch%5D%5Bregex%5D=false&columns%5B4%5D%5Bdata%5D%5BId%5D=Id&columns%5B4%5D%5Bname%5D=&columns%5B4%5D%5Bsearchable%5D=false&columns%5B4%5D%5Borderable%5D=false&columns%5B4%5D%5Bsearch%5D%5Bvalue%5D=&columns%5B4%5D%5Bsearch%5D%5Bregex%5D=false&order%5B0%5D%5Bcolumn%5D=0&order%5B0%5D%5Bdir%5D=desc&start=0&length=10&search%5Bvalue%5D=&search%5Bregex%5D=false&_=1769785962449',
         { method: "GET" }
     ).then(async (result) => {
         if (result.status != 200) {
@@ -437,16 +437,16 @@ async function get_belgian_onboarding() {
             return false;
         }
 
-        j = await result.json()
-        data = j.data
+        const j = await result.json()
+        const data = j.data
         // just get first guys ID, should be fine!
-        id = data[0].Id
+        const id = data[0].Id
 
         return await fetch(`https://visaonweb.diplomatie.be/VisaApplication/CreateRdv?Id=${id}`,
             { method: "POST" }
         ).then(async (result) => {
-            j = await result.json()
-            onboarding_token = j.infoToSent;
+            const j2 = await result.json()
+            const onboarding_token = j2.infoToSent;
             return onboarding_token
         })
     })
@@ -455,18 +455,18 @@ async function get_belgian_onboarding() {
 }
 
 async function handle_belgium(domain) {
-    resp = await fetch(domain, {
+    let resp = await fetch(domain, {
         method: "GET",
     }).then(async (result) => {
-        res_text = await result.text()
-        start = res_text.indexOf('__RequestVerificationToken')
-        end = start + "__RequestVerificationToken' type='hidden' value='".length
+        const res_text = await result.text()
+        let start = res_text.indexOf('__RequestVerificationToken')
+        let end = start + "__RequestVerificationToken' type='hidden' value='".length
         let token = res_text.slice(end, res_text.indexOf('"', end)) // Got request token.
 
         const user = await get_tu();
         const pass = await get_tp();
 
-        login_attempt = await fetch(domain, {
+        let login_attempt = await fetch(domain, {
             method: "POST",
             body: new URLSearchParams({
                 '__RequestVerificationToken': token,
@@ -474,7 +474,7 @@ async function handle_belgium(domain) {
                 'Password': pass
             })
         }).then(async (result) => {
-            text = await result.text()
+            const text = await result.text()
             if (result.status != 302) {
                 if (text.indexOf('Invalid username') != -1) {
                     log("Failed to login 1...");
@@ -505,8 +505,8 @@ async function handle_belgium(domain) {
 async function main() {
     const cur_url = document.URL;
     const cur_title = document.title;
-    start = cur_url.indexOf("visas-");
-    end = cur_url.indexOf(".com");
+    let start = cur_url.indexOf("visas-");
+    let end = cur_url.indexOf(".com");
 
     const domain_lang = cur_url.substring(start, end + 10); // Include language
     const domain_nolang = cur_url.substring(start, end + 4); // no language
@@ -531,7 +531,7 @@ async function main() {
         let booking_succeeded = false;
         while (booking_attempt_count < 5) {
             let res = await attempt_booking(booking_attempt)
-            if (res == 1) {
+            if (res === true) {
                 booking_succeeded = true;
                 if (cancelled) {
                     const bd = booking_attempt.body_data;
@@ -565,7 +565,7 @@ async function main() {
             let restored = false;
             for (let i = 0; i < 3; i++) {
                 let res = await attempt_booking(fallback);
-                if (res == 1) {
+                if (res === true) {
                     log_info("Fallback re-booking succeeded — original slot restored");
                     restored = true;
                     send_telegram_msg(`<b>SSS</b>\n✅ Original appointment (${original.date} ${original.time}) re-booked successfully.`);
@@ -593,8 +593,8 @@ async function main() {
         return;
     }
 
-    tested = await get_tested();
-    creds = await get_refreshing();
+    let tested = await get_tested();
+    let creds = await get_refreshing();
     let logged = await check_logged_in();
     if (logged == false || (tested != 0 && creds == false))
         return;
@@ -607,7 +607,7 @@ async function main() {
     store_val("captcha_attempts", 0);
 
     if (document.URL.indexOf("diplomatie") != -1) {
-        if (handle_belgium(document.URL) == false) {
+        if ((await handle_belgium(document.URL)) == false) {
             request_notification("Login details are incorrect, please double check!");
             set_status("Error sss_cs.005", "red");
             set_refreshing(false);
@@ -678,7 +678,7 @@ async function main() {
                 const recap = document.getElementsByClassName('swal2-container')
                 const recap2 = document.getElementById("it-recaptcha-here")
                 if (recap.length > 0 || recap2.length > 0) {
-                    login_form = document.getElementById("kc-login-form");
+                    const login_form = document.getElementById("kc-login-form");
                     get_membership().then(async (membership) => {
                         store_val("captcha_interact", true);
                         if (membership < 4) {
@@ -748,7 +748,7 @@ async function main() {
         else if (cur_url.indexOf(applications) != -1) {
             store_val("captcha_interact", false);
 
-            extract_data_promise = extract_application_id_from_groups();
+            let extract_data_promise = extract_application_id_from_groups();
             extract_data_promise.then((extract_data) => {
                 if (extract_data == null || extract_data.app_num == null) {
                     request_notification("No suitable application found, please create one or check your settings!")

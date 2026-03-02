@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+@font-face {
+    font-family: 'Space Grotesk';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('fonts/SpaceGrotesk-Regular.ttf') format('truetype');
+}
+
 /* Custom scan button states */
 @utility scan-off {
     background-color: var(--color-indigo-500);

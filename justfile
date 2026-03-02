@@ -39,6 +39,7 @@ package: build
         resources/popup.js \
         resources/popup.html \
         resources/dist/output.css \
+        resources/fonts/ \
         resources/favicon.png \
         resources/favicon_small.png \
         -x "*.DS_Store"

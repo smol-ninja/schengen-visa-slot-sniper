@@ -42,8 +42,8 @@ get_val('scanning').then((res) => {
     }
 })
 
-tiers = ["Full Access"]
-tier_descs = ["All features unlocked"]
+const tiers = ["Full Access"]
+const tier_descs = ["All features unlocked"]
 
 function log(msg) {
     let time = new Date(Date.now())
@@ -199,7 +199,7 @@ ss.addEventListener('click', async (e) => {
 })
 
 test_details.addEventListener("click", async (e) => {
-    locs = {
+    const locs = {
         'de': 'https://visas-de.tlscontact.com',
         'fr': 'https://visas-fr.tlscontact.com',
         'be': 'https://visaonweb.diplomatie.be/Account/Login?ReturnUrl=%2Fen',
@@ -225,15 +225,12 @@ test_details.addEventListener("click", async (e) => {
 
 ///////////////////////////GETTERS + SETTERS//////////////////////////////////////
 
-async function get_user_creds() {
-}
-
 async function get_is_scanning() {
     return (await get_val("scanning")).scanning
 }
 
 async function store_val(name, val) {
-    obj = {}
+    const obj = {}
     obj[name] = val
     return await chrome.storage.local.set(obj)
 }
@@ -546,8 +543,8 @@ function set_stored_tls_details() {
     }).then((text) => {
         if (text.premium_days != undefined) {
             let premium_days = []
-            pd_split = text.premium_days.split('|')
-            for (i = 0; i < pd_split.length; i++) {
+            const pd_split = text.premium_days.split('|')
+            for (let i = 0; i < pd_split.length; i++) {
                 if (pd_split[i] != '') {
                     let rb = document.getElementById(`d${pd_split[i]}`)
                     rb.checked = true;
@@ -623,8 +620,8 @@ function clear_cache() {
 }
 
 async function check_cf_blocked() {
-    extension_settings = document.getElementById('ext_settings');
-    extension_yap = document.getElementById('ext_yap');
+    let extension_settings = document.getElementById('ext_settings');
+    let extension_yap = document.getElementById('ext_yap');
     let blocked = (await get_val("cf_blocked")).cf_blocked
 
     if (blocked) {
@@ -658,7 +655,7 @@ async function tick() {
         let gid = document.getElementById("gid");
         let glock = document.getElementById("gloc");
 
-        details = await get_stored_application_details();
+        let details = await get_stored_application_details();
         if (details == undefined) {
             gname.innerText = "Not Set";
             gid.innerText = "Not Set";
@@ -676,7 +673,7 @@ async function tick() {
     let last_scan_el = document.getElementById("last_scan");
     last_scan_el.innerText = last_scan_time || "Not yet";
 
-    find_count = (await get_val("found_count")).found_count
+    let find_count = (await get_val("found_count")).found_count
     if (find_count == undefined)
         find_count = 0;
     let ac = document.getElementById("apt_count");
