@@ -28,3 +28,5 @@ Initial public release.
 - Allow refresh rate changes while scanning is active
 - Avoid unnecessary credential refresh when next-month data is missing
 - Reduce log noise from Cloudflare cookie handler
+
+[0.1.0]: https://github.com/smol-ninja/schengen-visa-slot-sniper/releases/tag/v0.1.0

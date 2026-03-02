@@ -1,0 +1,50 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+
+      - name: Build and package
+        run: |
+          bunx @tailwindcss/cli -i resources/input.css -o resources/dist/output.css --minify
+          zip -r schengen-visa-slot-sniper.zip \
+            manifest.json \
+            content.js \
+            lib/ \
+            resources/background.js \
+            resources/popup.js \
+            resources/popup.html \
+            resources/dist/output.css \
+            resources/favicon.png \
+            resources/favicon_small.png \
+            -x "*.DS_Store"
+
+      - name: Extract changelog
+        id: changelog
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          VERSION="${TAG_NAME#v}"
+          BODY=$(awk "/^## \[${VERSION}\]/{found=1; next} /^## \[/{found=0} found" CHANGELOG.md)
+          {
+            echo "body<<EOF"
+            echo "$BODY"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          body: ${{ steps.changelog.outputs.body }}
+          files: schengen-visa-slot-sniper.zip
