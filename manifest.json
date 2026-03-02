@@ -2,13 +2,13 @@
    "action": {
       "default_icon": "resources/favicon.png",
       "default_popup": "resources/popup.html",
-      "default_title": "Schengen Slot Sniper"
+      "default_title": "Schengen Visa Slot Sniper"
    },
    "background": {
       "service_worker": "resources/background.js"
    },
    "content_scripts": [ {
-      "js": [ "content.js" ],
+      "js": [ "lib/url-utils.js", "content.js" ],
       "matches": [ "*://*.tlscontact.com/*", "https://visaonweb.diplomatie.be/*" ]
    } ],
    "description": "Schengen visa appointment slot finder & auto-booker",
@@ -17,7 +17,7 @@
       "48": "resources/favicon.png"
    },
    "manifest_version": 3,
-   "name": "Schengen Slot Sniper",
+   "name": "Schengen Visa Slot Sniper",
    "permissions": [ "cookies", "webRequest", "notifications", "declarativeNetRequest", "storage", "tabs" ],
-   "version": "3.0.0"
+   "version": "0.1.0"
 }

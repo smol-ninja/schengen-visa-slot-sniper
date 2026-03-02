@@ -62,6 +62,8 @@ When submitting a PR, ensure that:
 - All changes work when the extension is loaded unpacked in Chrome.
 - The popup opens without console errors.
 - Tailwind CSS compiles without errors (`just build`).
+- Tests pass (`just test`).
+- Lint passes (`just lint`).
 - New Tailwind class names used in JS are written as full static strings (no dynamic construction like
   `` `text-${color}-400` ``).
 - Storage keys use the `sss_` prefix.

@@ -9,6 +9,11 @@
   },
   "scripts": {
     "build": "bunx @tailwindcss/cli -i resources/input.css -o resources/dist/output.css --minify",
-    "watch": "bunx @tailwindcss/cli -i resources/input.css -o resources/dist/output.css --watch"
+    "watch": "bunx @tailwindcss/cli -i resources/input.css -o resources/dist/output.css --watch",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.4",
+    "vitest": "^4.0.18"
   }
 }

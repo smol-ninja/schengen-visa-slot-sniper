@@ -4,6 +4,9 @@ node_modules/
 # Build artifacts
 resources/dist/
 
+# Test coverage
+coverage/
+
 # OS files
 .DS_Store
 Thumbs.db

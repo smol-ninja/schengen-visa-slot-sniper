@@ -1,8 +1,9 @@
 // TODO: PRETTIFY & COPY THE COPY
+importScripts('../lib/appointments.js');
 
 /**
  * 120 SECONDS PERFECT FOR GERMANY (Maybe 40/50)
- * 
+ *
  */
 let tick_interval = null
 let iteration = 0
@@ -281,126 +282,31 @@ async function create_notification(noti_name, msg, interaction) {
     return await chrome.notifications.create(noti_name, {
         type: "basic",
         iconUrl: chrome.runtime.getURL('resources/favicon.png'),
-        title: "Schengen Slot Sniper",
+        title: "Schengen Visa Slot Sniper",
         message: msg,
         requireInteraction: noti_name == "Noti_Pipe" || interaction,
         priority: 2
     })
 }
 
-async function get_first_viable_appointment(appointment_data, start_date, start_time, last_date, last_time, days, accept_prime, current_booking) {
-    let found = false;
-    let out_date = null, out_time = null, out_type = null;
-    // 2025-11-28
-    for (x = 0; x < appointment_data.length; x++) {
-        if (found)
-            break;
-
-        cur_obj = appointment_data[x]
-        let date = cur_obj['day']
-        const appt_date_obj = new Date(date)
-        if (days != null && days.length != 0) {
-            if (days.includes(appt_date_obj.getDay()) == false)
-                continue;
-        }
-
-        if (start_date != null && start_date != undefined) {
-            const start_date_obj = new Date(start_date);
-            if (appt_date_obj < start_date_obj)
-                continue;  // Not past the start date
-        }
-
-        if (last_date != null && last_date != undefined) {
-            const last_date_obj = new Date(last_date);
-            if (appt_date_obj > last_date_obj)
-                continue; // past the last date
-        }
-
-        // Reschedule mode: skip slots that aren't better than current booking
-        if (current_booking != null && current_booking != undefined) {
-            const current_date_obj = new Date(current_booking.date);
-            if (appt_date_obj > current_date_obj)
-                continue; // new date is later, not better
-            if (appt_date_obj.getTime() == current_date_obj.getTime()) {
-                // same date — will check time per-slot below
-            }
-        }
-
-        let slots = cur_obj['slots']
-        for (i = 0; i < slots.length; i++) {
-            slot = slots[i]
-            labels = slot['labels']
-            if (labels.length == 0)
-                continue;
-            // NOTE: Assume times are in 24 hour HH:MM:SS format. Otherwise convert.
-            const appt_time = slot['time']
-            if (start_time != null && start_time != undefined)
-                if (appt_time < start_time)
-                    continue;
-
-            if (last_time != null && start_time != undefined)
-                if (appt_time > last_time)
-                    continue;
-
-            // Reschedule mode: same date, skip if time isn't earlier
-            if (current_booking != null && current_booking != undefined) {
-                const current_date_obj = new Date(current_booking.date);
-                if (appt_date_obj.getTime() == current_date_obj.getTime() && appt_time >= current_booking.time)
-                    continue; // same date but not earlier time
-            }
-
-            if (labels[0] != '') {
-                if (accept_prime == false)
-                    continue;
-            }
-
-            log("CHOOSING THIS APPOINTMENT:")
-            slot_data = JSON.stringify(slot)
-            log(slot_data)
-            log_info("Choosing slot: " + slot_data)
-            // This is the one!
-            out_date = date;
-            out_time = appt_time;
-            out_type = labels[0]
-            found = true;
-            break
-        }
-    }
-
-
-    return { out_date, out_time, out_type }
-}
+// get_first_viable_appointment is loaded from lib/appointments.js via importScripts
 
 async function get_premium_filtering() {
-    let pd = (await get_val("premium_days")).premium_days;
+    const pd = (await get_val("premium_days")).premium_days;
     const last_date = (await get_val("premium_last_date")).premium_last_date;
     const start_date = (await get_val("premium_start_date")).premium_start_date;
     const last_time = (await get_val("premium_last_time")).premium_last_time;
     const start_time = (await get_val("premium_start_time")).premium_start_time;
     const accept_prime = (await get_val("premium_accept_prime")).premium_accept_prime;
 
-    let premium_days = []
-    if (pd == undefined || pd == null)
-        pd = ''
-    pd_split = pd.split('|')
-    for (i = 0; i < pd_split.length; i++) {
-        if (pd_split[i] != '')
-            premium_days.push(Number(pd_split[i]))
-    }
+    const premium_days = parse_premium_days(pd);
 
     return { premium_days, last_date, start_date, last_time, start_time, accept_prime }
 }
 
 async function count_appointments(appts) {
     let fc = (await get_val("found_count")).found_count
-    count = 0;
-    for (x = 0; x < appts.length; x++) {
-        for (y = 0; y < appts[x].slots.length; y++) {
-            if (appts[x].slots[y].labels.length != 0)
-                count++;
-        }
-    }
-
+    const count = count_appointment_slots(appts);
     store_val("found_count", fc + count);
 }
 
@@ -454,10 +360,13 @@ async function parse_appts(appt_info, check_uri, domain) {
             let premium_obj = await get_premium_filtering();
             let current_booking = (await get_val("current_booking")).current_booking || null;
 
-            let chosen_appt = await get_first_viable_appointment(j,
+            let chosen_appt = get_first_viable_appointment(j,
                 premium_obj.start_date, premium_obj.start_time, premium_obj.last_date,
                 premium_obj.last_time, premium_obj.premium_days, premium_obj.accept_prime,
                 current_booking)
+
+            if (chosen_appt.out_date != null)
+                log_info("Choosing slot: " + JSON.stringify(chosen_appt))
 
             if (chosen_appt.out_date == null) {
                 if (current_booking != null)

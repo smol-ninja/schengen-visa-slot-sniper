@@ -92,18 +92,7 @@ async function log_error(msg) {
 async function log_info(msg) {
     log("INFO: " + msg)
 }
-/**
- * For a given URL, extract the application ID from it
- * @param {*} url 
- */
-function extract_application_id_from_url(url) {
-    end = url.indexOf('/workflow');
-    if (end == -1)
-        return null;
-
-    const id = url.substring(end - 7, end);
-    return Number(id);
-}
+// extract_application_id_from_url is loaded from lib/url-utils.js via manifest
 
 async function extract_application_id_from_groups() {
     const elements = document.getElementsByClassName('p-4 text-on-surface-variant')
@@ -676,7 +665,7 @@ async function main() {
             get_tls_account_details().then((res) => {
                 if (res.tu == null || res.tu == undefined || res.tp == null || res.tp == undefined) {
                     failed = true;
-                    request_notification("Please input your login details in the Schengen Slot Sniper extension!")
+                    request_notification("Please input your login details in the Schengen Visa Slot Sniper extension!")
                     set_status("Error sss_cs.007", "red");
                     set_refreshing(false);
                     return;
