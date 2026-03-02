@@ -88,7 +88,8 @@ async function get_captcha_solution(url) {
     return captcha_response
 }
 
-async function get_hash_for_action(actionName, book_url, domain) {
+async function get_hash_for_action(actionName, book_url, domain, chunkPagePath) {
+    chunkPagePath = chunkPagePath || 'appointment-booking'
     let default_hash = ''
     if (actionName == 'bookAppointment')
         default_hash = '60177cf047fef72ae5708ac2ab4a41760601bc6862'
@@ -115,13 +116,13 @@ async function get_hash_for_action(actionName, book_url, domain) {
         }
     })
 
-    const find_text = hash_response.indexOf('appointment-booking/page-')
+    const find_text = hash_response.indexOf(chunkPagePath + '/page-')
     if (find_text != -1) {
-        start = find_text + "appointment-booking".length + 1
+        start = find_text + chunkPagePath.length + 1
         end = hash_response.indexOf('"', start)
         let snippet = hash_response.substring(start, end)
         log('Hash snippet: ' + snippet)
-        hash_url = `https://${domain}/_next/static/chunks/app/%5Blang%5D/%5BgroupId%5D/workflow/appointment-booking/${snippet}`
+        hash_url = `https://${domain}/_next/static/chunks/app/%5Blang%5D/%5BgroupId%5D/workflow/${chunkPagePath}/${snippet}`
     }
     else
         return default_hash;
@@ -170,6 +171,26 @@ async function get_hash_for_action(actionName, book_url, domain) {
     return final_hash;
 }
 
+async function get_cancel_hash(check_uri, domain) {
+    // Try appointment-booking chunk first (cancel action may live alongside book action)
+    let hash = await get_hash_for_action("cancelAppointment", check_uri, domain);
+    if (hash && hash !== '') {
+        log_info("Found cancelAppointment in appointment-booking chunk");
+        return hash;
+    }
+
+    // Fall back to order-summary chunk
+    const order_url = check_uri.replace(/\/appointment-booking.*/, '/order-summary');
+    hash = await get_hash_for_action("cancelAppointment", order_url, domain, "order-summary");
+    if (hash && hash !== '') {
+        log_info("Found cancelAppointment in order-summary chunk");
+        return hash;
+    }
+
+    log_error("Could not find cancelAppointment action hash");
+    return null;
+}
+
 async function autobook_appointment(check_uri, lang, centre, domain, date, time, appt_type) {
     wf = check_uri.indexOf('/workflow')
     wf_start = wf - 1
@@ -196,6 +217,27 @@ async function autobook_appointment(check_uri, lang, centre, domain, date, time,
     log_info(`Booking with url ${book_url}`)
 
     book_hash = await get_hash_for_action("bookAppointment", check_uri, domain)
+
+    // In reschedule mode, get cancel hash to cancel existing booking first
+    let cancel_data = null;
+    let reschedule = (await get_val("reschedule_mode")).reschedule_mode;
+    if (reschedule) {
+        let current_booking = (await get_val("current_booking")).current_booking;
+        if (current_booking) {
+            let cancel_hash = await get_cancel_hash(check_uri, domain);
+            if (cancel_hash) {
+                const order_url = check_uri.replace(/\/appointment-booking.*/, '/order-summary');
+                cancel_data = {
+                    hash: cancel_hash,
+                    cancel_uri: order_url,
+                    original_booking: current_booking,
+                };
+            } else {
+                log("WARNING: Reschedule mode active but no cancel hash found — booking may fail");
+            }
+        }
+    }
+
     const book_object = {
         book_uri: book_url,
         hash: book_hash,
@@ -207,7 +249,8 @@ async function autobook_appointment(check_uri, lang, centre, domain, date, time,
             date,
             time,
             appt_type,
-        }
+        },
+        cancel: cancel_data,
     }
 
     await store_val("vw_booking_attempt", book_object)
@@ -431,7 +474,7 @@ async function parse_appts(appt_info, check_uri, domain) {
             lang_end = appt_info.indexOf(',"', lang_start + '"lang",'.length)
             lang = appt_info.substring(lang_start + '"lang",'.length, lang_end - 1)
 
-            autobook_appointment(check_uri, lang, centre, domain,
+            await autobook_appointment(check_uri, lang, centre, domain,
                 chosen_appt.out_date, chosen_appt.out_time, chosen_appt.out_type); // auto book here (always for 1, sometimes for 2)
         }
 

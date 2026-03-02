@@ -289,6 +289,80 @@ async function verify_successful_booking(booking_info) {
     }
 }
 
+async function send_telegram_msg(text) {
+    const tg = await get_val("tg_enabled");
+    if (!tg.tg_enabled) return;
+
+    const token = (await get_val("tg_bot_token")).tg_bot_token;
+    const chat_id = (await get_val("tg_chat_id")).tg_chat_id;
+    if (!token || !chat_id) return;
+
+    try {
+        await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chat_id, text, parse_mode: "HTML" })
+        });
+    } catch (e) {
+        log_error("Telegram send failed: " + e.message);
+    }
+}
+
+async function attempt_cancel(booking_info) {
+    const cancel = booking_info.cancel;
+    const fgId = booking_info.body_data.fgId;
+    const lang = booking_info.body_data.lang;
+
+    const form_data = new FormData();
+    form_data.append('1_formGroupId', fgId);
+    form_data.append('1_lang', lang);
+    form_data.append('0', '[{"status":"IDLE"},"$K1"]');
+
+    log_info("Attempting to cancel existing appointment...");
+    const orig = cancel.original_booking;
+    send_telegram_msg(`<b>Visa Warden</b>\n⏳ Cancelling existing appointment (${orig.date} ${orig.time}) to reschedule...`);
+
+    const res = await fetch(cancel.cancel_uri,
+        {
+            mode: "same-origin",
+            method: "POST",
+            headers: {
+                "next-action": cancel.hash,
+                "Accept": "text/x-component",
+            },
+            origin: cancel.cancel_uri,
+            referrer: cancel.cancel_uri,
+            credentials: "include",
+            body: form_data
+        }
+    ).then(async (response) => {
+        log(`Cancel response: ${response.status}`)
+        const text = await response.text();
+        log("Cancel response body: " + text.substring(0, 500));
+
+        if (response.status == 200 || response.status == 303) {
+            if (text.indexOf('FAILED') != -1) {
+                log_error("Cancel returned FAILED response");
+                send_telegram_msg(`<b>Visa Warden</b>\n❌ Cancel failed — server rejected. Keeping existing appointment.`);
+                return false;
+            }
+            log_info("Cancel appears successful");
+            send_telegram_msg(`<b>Visa Warden</b>\n✅ Existing appointment (${orig.date} ${orig.time}) cancelled.`);
+            return true;
+        }
+
+        log_error("Cancel failed with status: " + response.status);
+        send_telegram_msg(`<b>Visa Warden</b>\n❌ Cancel failed (HTTP ${response.status}). Keeping existing appointment.`);
+        return false;
+    }).catch((err) => {
+        log_error("Cancel fetch error: " + err.message);
+        send_telegram_msg(`<b>Visa Warden</b>\n❌ Cancel error: ${err.message}`);
+        return false;
+    });
+
+    return res;
+}
+
 async function attempt_booking(booking_info) {
     const body = await get_citizen_two_body(booking_info)
     const book_url = booking_info.book_uri
@@ -451,23 +525,81 @@ async function main() {
     const booking_attempt = await get_booking_attempt()
     let booking_attempt_count = 0;
     if (booking_attempt != null && booking_attempt != undefined) {
+        // Cancel existing appointment first if in reschedule mode
+        let cancelled = false;
+        if (booking_attempt.cancel) {
+            let cancel_ok = await attempt_cancel(booking_attempt);
+            if (!cancel_ok) {
+                log_error("Cancel failed — keeping existing appointment, skipping new booking");
+                store_val("vw_booking_attempt", null);
+                set_request_close(true);
+                return;
+            }
+            cancelled = true;
+            log_info("Existing appointment cancelled — proceeding with new booking");
+        }
+
+        let booking_succeeded = false;
         while (booking_attempt_count < 5) {
             let res = await attempt_booking(booking_attempt)
             if (res == 1) {
+                booking_succeeded = true;
+                if (cancelled) {
+                    const bd = booking_attempt.body_data;
+                    const orig = booking_attempt.cancel.original_booking;
+                    send_telegram_msg(`<b>Visa Warden</b>\n✅ Rescheduled! ${orig.date} ${orig.time} → ${bd.date} ${bd.time} (${bd.centre})`);
+                }
                 let details = await get_application_details()
-                window.location.href = `https://${domain_lang}/${details.app_id}/workflow/order-summary` // not even a real place lol.
+                window.location.href = `https://${domain_lang}/${details.app_id}/workflow/order-summary`
                 break;
             }
             else if (res == -1) {
-                log_info("Attempting quick recheck");
-                store_val("vw_booking_attempt", null);
-                set_refresh_timer(5); // Try again in 5s
-                set_request_close(true);
-                break; // Total Failure.
+                break; // Slot unavailable — stop retrying this slot
             }
-            // Clean up after!
             booking_attempt_count++;
         }
+
+        // Fallback: if we cancelled but new booking failed, try to re-book original slot
+        if (cancelled && !booking_succeeded) {
+            log_error("New booking failed after cancel — attempting to re-book original slot");
+            const original = booking_attempt.cancel.original_booking;
+            send_telegram_msg(`<b>Visa Warden</b>\n⚠️ New slot booking failed. Attempting to re-book original (${original.date} ${original.time})...`);
+            const fallback = {
+                ...booking_attempt,
+                body_data: {
+                    ...booking_attempt.body_data,
+                    date: original.date,
+                    time: original.time,
+                },
+                cancel: null,
+            };
+            let restored = false;
+            for (let i = 0; i < 3; i++) {
+                let res = await attempt_booking(fallback);
+                if (res == 1) {
+                    log_info("Fallback re-booking succeeded — original slot restored");
+                    restored = true;
+                    send_telegram_msg(`<b>Visa Warden</b>\n✅ Original appointment (${original.date} ${original.time}) re-booked successfully.`);
+                    let details = await get_application_details()
+                    window.location.href = `https://${domain_lang}/${details.app_id}/workflow/order-summary`
+                    break;
+                }
+                if (res == -1) break; // Original slot gone too
+            }
+            if (!restored) {
+                log_error("CRITICAL: Failed to re-book original slot! Manual rebooking needed!");
+                request_notification("CRITICAL: Original appointment cancelled but could not re-book! Check immediately!");
+                send_telegram_msg(`<b>Visa Warden</b>\n🚨 CRITICAL: Cancelled old appointment but failed to book new OR re-book original (${original.date} ${original.time}). Manual action needed!`);
+            }
+        }
+
+        if (!booking_succeeded && !cancelled) {
+            // Non-reschedule failure — original quick-recheck behavior
+            log_info("Attempting quick recheck");
+            set_refresh_timer(5);
+            set_request_close(true);
+        }
+
         store_val("vw_booking_attempt", null);
         return;
     }
