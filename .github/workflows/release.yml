@@ -13,22 +13,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
+      - uses: extractions/setup-just@v2
       - run: bun install --frozen-lockfile
 
       - name: Build and package
-        run: |
-          bunx @tailwindcss/cli -i resources/input.css -o resources/dist/output.css --minify
-          zip -r schengen-visa-slot-sniper.zip \
-            manifest.json \
-            content.js \
-            lib/ \
-            resources/background.js \
-            resources/popup.js \
-            resources/popup.html \
-            resources/dist/output.css \
-            resources/favicon.png \
-            resources/favicon_small.png \
-            -x "*.DS_Store"
+        run: just package
 
       - name: Extract changelog
         id: changelog

@@ -11,21 +11,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
+      - uses: extractions/setup-just@v2
       - run: bun install --frozen-lockfile
-      - run: bunx biome check .
+      - run: just lint
 
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
+      - uses: extractions/setup-just@v2
       - run: bun install --frozen-lockfile
-      - run: bunx vitest run
+      - run: just test
 
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
+      - uses: extractions/setup-just@v2
       - run: bun install --frozen-lockfile
-      - run: bunx @tailwindcss/cli -i resources/input.css -o resources/dist/output.css --minify
+      - run: just build
