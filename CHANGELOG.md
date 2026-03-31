@@ -23,9 +23,3 @@ The format is based on [Common Changelog](https://common-changelog.org/), and th
 - Copy recent logs button (last 50 entries)
 - Unit tests (Vitest) and linting (Biome) with GitHub Actions CI
 - Open-source docs (README, CONTRIBUTING, SECURITY, LICENSE)
-
-### Fixed
-
-- Allow refresh rate changes while scanning is active
-- Avoid unnecessary credential refresh when next-month data is missing
-- Reduce log noise from Cloudflare cookie handler
