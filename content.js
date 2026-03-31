@@ -18,7 +18,7 @@ async function set_tested(val) {
     return (await chrome.storage.local.set({ "sss_tested": val }))
 }
 
-async function get_tested(val) {
+async function get_tested() {
     return (await chrome.storage.local.get("sss_tested")).sss_tested
 }
 
@@ -43,7 +43,7 @@ async function check_logged_in() {
 }
 
 async function set_scanning(val) {
-    if (val == true)
+    if (val === true)
         set_status("Active", "Green");
     return await store_val("scanning", val)
 }
@@ -180,6 +180,26 @@ async function get_captcha_solution(url) {
     return captcha_response
 }
 
+async function handle_site_down(domain_lang, cur_title) {
+    let da = (await get_val("down_attempts")).down_attempts
+    if (da == undefined || da == null)
+        da = 1;
+    da += 1
+
+    set_status(`TLSContact Down. Refreshing in 30s. Attempt ${da}`, "Orange");
+    store_val("down_attempts", da);
+    if (cur_title == '' || cur_title.indexOf("Service Unavailable") != -1 || document.body.className.indexOf("neterror") != -1) {
+        setTimeout(() => {
+            window.location.href = `https://${domain_lang}/login`
+        }, 30 * 1000) // Refresh page in 30s.
+    }
+    else {
+        setTimeout(() => {
+            location.reload();
+        }, 30 * 1000) // Refresh page in 30s.
+    }
+}
+
 async function get_citizen_two_body(booking_info) {
     const fgId = booking_info.body_data.fgId;
     const lang = booking_info.body_data.lang;
@@ -210,18 +230,16 @@ async function alert_successful_booking(booking_info) {
     let reschedule = (await get_val("reschedule_mode")).reschedule_mode;
     let current = (await get_val("current_booking")).current_booking;
 
-    if (booking_info && booking_info.body_data) {
+    let has_body = booking_info && booking_info.body_data;
+    if (has_body) {
         let new_date = booking_info.body_data.date;
         let new_time = booking_info.body_data.time;
         store_val("current_booking", { date: new_date, time: new_time });
+    }
 
-        if (current != null) {
-            request_notification(`Rescheduled! ${current.date} ${current.time} → ${new_date} ${new_time}`);
-            set_status("Rescheduled!", "Green");
-        } else {
-            request_notification("Appointment booked! Check it out in your email!!");
-            set_status("Appointment Booked!", "Green");
-        }
+    if (has_body && current != null) {
+        request_notification(`Rescheduled! ${current.date} ${current.time} → ${booking_info.body_data.date} ${booking_info.body_data.time}`);
+        set_status("Rescheduled!", "Green");
     } else {
         request_notification("Appointment booked! Check it out in your email!!");
         set_status("Appointment Booked!", "Green");
@@ -640,25 +658,7 @@ async function main() {
             const pass = document.getElementById('password-input-field')
 
             if (email == null || pass == null) {
-                let da = (await get_val("down_attempts")).down_attempts
-                if (da == undefined || da == null)
-                    da = 1;
-                da += 1
-
-                set_status(`TLSContact Down. Refreshing in 30s. Attempt ${da}`, "Orange");
-                store_val("down_attempts", da);
-                // Cloudflare error?
-                let body_text = document.body.innerText;
-                if (cur_title == '' || cur_title.indexOf("Service Unavailable") != -1 || document.body.className.indexOf("neterror") != -1) {
-                    setTimeout(() => {
-                        window.location.href = `https://${domain_lang}/login`
-                    }, 30 * 1000) // Refresh page in 10s.
-                }
-                else {
-                    setTimeout(() => {
-                        location.reload();
-                    }, 30 * 1000) // Refresh page in 10s.
-                }
+                await handle_site_down(domain_lang, cur_title);
                 return;
             }
             store_val("down_attempts", 0);
@@ -707,25 +707,7 @@ async function main() {
                         if (test.status == 0) {
                             location.reload();
                         } else {
-                            let da = (await get_val("down_attempts")).down_attempts
-                            if (da == undefined || da == null)
-                                da = 1;
-                            da += 1
-
-                            set_status(`TLSContact Down. Refreshing in 30s. Attempt ${da}`, "Orange");
-                            store_val("down_attempts", da);
-                            // Cloudflare error?
-                            let body_text = document.body.innerText;
-                            if (cur_title == '' || cur_title.indexOf("Service Unavailable") != -1 || document.body.className.indexOf("neterror") != -1) {
-                                setTimeout(() => {
-                                    window.location.href = `https://${domain_lang}/login`
-                                }, 30 * 1000) // Refresh page in 10s.
-                            }
-                            else {
-                                setTimeout(() => {
-                                    location.reload();
-                                }, 30 * 1000) // Refresh page in 10s.
-                            }
+                            await handle_site_down(domain_lang, cur_title);
                             return;
                         }
                     })

@@ -58,13 +58,9 @@ async function set_refreshing(val) {
 }
 
 async function set_scanning(val) {
-    if (val == true)
+    if (val === true)
         set_status("Active", "Green");
     return chrome.storage.local.set({ "scanning": val })
-}
-
-async function query_membership(user) {
-    return 0;
 }
 
 async function get_user() {
@@ -79,7 +75,7 @@ async function log_info(msg) {
     log("INFO: " + msg)
 }
 
-async function request_captcha($uri) {
+async function request_captcha(uri) {
     return '';
 }
 
@@ -200,21 +196,6 @@ async function autobook_appointment(check_uri, lang, centre, domain, date, time,
     wf_start++
     const fgId = check_uri.substring(wf_start, wf)
     let book_url = check_uri
-    const booking_api = {
-        non_citizen: 0,
-        citizen_one: 1,
-        citizen_two: 2,
-        citizen_v2: 3
-    }
-
-    // let booking_type = booking_api.non_citizen
-    // if (book_url.indexOf("location=") == -1) { // Important to have location!!!!
-    //     if (book_url.indexOf("?") == -1)
-    //         book_url = `${book_url}?location=${centre}`
-    //     else
-    //         book_url = `${book_url}&location=${centre}`
-
-    // }
     log_info(`Booking with url ${book_url}`)
 
     let book_hash = await get_hash_for_action("bookAppointment", check_uri, domain)
@@ -256,7 +237,7 @@ async function autobook_appointment(check_uri, lang, centre, domain, date, time,
 
     await store_val("sss_booking_attempt", book_object)
     log("Spawning tab")
-    let creating = chrome.tabs.create({ url: `https://${domain}`, active: false, index: 0 }) // Likely JUST the clearance needed to change.
+    chrome.tabs.create({ url: `https://${domain}`, active: false, index: 0 }) // Likely JUST the clearance needed to change.
 }
 
 async function send_telegram_msg(text) {
@@ -509,7 +490,7 @@ async function refresh_creds(domain) {
         login_belgium("https://visaonweb.diplomatie.be/Account/Login?ReturnUrl=%2Fen")
     }
     else {
-        let creating = chrome.tabs.create({ url: `https://${domain}`, active: false, index: 0 }) // Likely JUST the clearance needed to change.
+        chrome.tabs.create({ url: `https://${domain}`, active: false, index: 0 }) // Likely JUST the clearance needed to change.
         close_tab_timeout = setTimeout(async () => {
             if (cred_refresh_counter < 15) {
                 log("Retrying cred refresh!")
@@ -525,6 +506,22 @@ async function refresh_creds(domain) {
             }
         }, 30 * 1000);
     }
+}
+
+async function handle_appt_response(response) {
+    if (response.status == 403 || response.status == 429 || response.url.indexOf("expired-session") != -1) {
+        if (response.headers.has('retry-after')) {
+            log("Rate limited");
+            let length = Number(response.headers.get('retry-after')) / 60;
+            let time = new Date(Date.now())
+            time.setMinutes(time.getMinutes() + length);
+            set_status(`Rate Limited until ${time.toLocaleTimeString()}`, "red")
+            return 429;
+        }
+        log("Session expired");
+        return 403;
+    }
+    return response.text();
 }
 
 /**Check appointments for both this month and next month */
@@ -546,26 +543,7 @@ async function check_appts(domain, app_id) {
             credentials: 'include',
             priority: "high",
         }
-    ).then(response => {
-        if (response.status == 403 || response.status == 429 || response.url.indexOf("expired-session") != -1) {
-            if (response.headers.has('retry-after')) {
-                log("Rate limited");
-                let length = Number(response.headers.get('retry-after')) / 60;
-
-                let time = new Date(Date.now())
-                time.setMinutes(time.getMinutes() + length);
-                let ds = time.toLocaleTimeString();
-
-                set_status(`Rate Limited until ${ds}`, "red")
-                return 429;
-            } else {
-                log("Session expired");
-                return 403;
-            }
-        } else {
-            return response.text();
-        }
-    })
+    ).then(handle_appt_response)
 
     if (res == 429) {
         store_val("cf_blocked", true);
@@ -603,26 +581,7 @@ async function check_appts(domain, app_id) {
             credentials: 'include',
             priority: "high",
         }
-    ).then(response => {
-        if (response.status == 403 || response.status == 429 || response.url.indexOf("expired-session") != -1) {
-            if (response.headers.has('retry-after')) {
-                log("Rate limited");
-                let length = Number(response.headers.get('retry-after')) / 60;
-
-                let time = new Date(Date.now())
-                time.setMinutes(time.getMinutes() + length);
-                let ds = time.toLocaleTimeString();
-
-                set_status(`Rate Limited for until ${ds}`)
-                return 429;
-            }
-            log("Session expired. Give it a go!");
-            return 403;
-        }
-        else {
-            return response.text();
-        }
-    })
+    ).then(handle_appt_response)
 
     if (res == 403) {
         set_status("Refreshing Credentials", "yellow")
@@ -660,25 +619,9 @@ async function store_val(name, val) {
     return await chrome.storage.local.set(obj)
 }
 
-async function check_noti_pipe() {
-    const noti_pipe = await get_val("noti_pipe");
-    return noti_pipe;
-}
-
-async function check_sub() {
-    return true;
-}
-
 let _bg_last_scanning = null;
 async function tick() {
-    let same_sub = await check_sub();
-    if (!same_sub) {
-        set_scanning(false);
-        set_status("Idle", "Yellow");
-        await create_notification("expired", "Your membership has expired!")
-    }
-
-    let noti_obj = await check_noti_pipe()
+    let noti_obj = await get_val("noti_pipe");
     if (noti_obj.noti_pipe != null) {
         await create_notification("Noti_Pipe", noti_obj.noti_pipe)
         store_val("noti_pipe", null);

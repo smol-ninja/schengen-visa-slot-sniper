@@ -18,9 +18,7 @@ const STATUS_COLOR_MAP = {
 let scan_secs = document.getElementById("next_refresh")
 let cur_time = 0, booking = false, scanning = false
 
-get_val("refresh_rate").then((res) => {
-    return res;
-}).then((text) => {
+get_val("refresh_rate").then((text) => {
     if (text.refresh_rate == undefined) {
         chrome.storage.local.set({ "refresh_rate": 600 });
         rr.value = 600;
@@ -215,11 +213,9 @@ test_details.addEventListener("click", async (e) => {
     set_refreshing(true);
     await store_val("sss_request_close", false)
     set_status("Testing Details", "Yellow")
-    if (domain.indexOf('diplomatie') != -1) {
-        if (!login_belgium(domain)) {
-            create_notification("failed_login", "Login details are incorrect, please double check!")
-        }
-    } else
+    if (domain.indexOf('diplomatie') != -1)
+        login_belgium(domain)
+    else
         chrome.tabs.create({ url: domain, active: true, index: 0 })
 })
 
@@ -293,7 +289,7 @@ async function set_tested(val) {
     }
     else if (val == -1) {
         setBorderColor(detail_div, 'border-red-500');
-        set_testing_message("Awaiting proper details", "Red");
+        set_status("Awaiting Testing", "Red");
         set_testing_message("Your details are incorrect, please check them!", true);
     }
 
@@ -448,101 +444,61 @@ async function store_tls_details(e) {
     }
 }
 
-async function do_sss_login(user, pass) {
-    return 0;
-}
-
-async function disable_div_inputs(div_element) {
-    div_element.querySelectorAll("input").forEach(element => {
-        element.setAttribute("disabled", "")
-    });
-}
-
-async function hide_div(div_element) {
-    div_element.classList.add('hidden');
-}
-
 async function check_functionality(membership) {
     store_val("sss_autobooking", 2);
-    hide_div(document.getElementById('c2a'));
+    document.getElementById('c2a').classList.add('hidden');
 }
 
 function set_stored_tls_details() {
-    get_val("tu").then((res) => {
-        return res;
-    }).then((text) => {
+    get_val("tu").then((text) => {
         if (text.tu != undefined)
             tls_user.value = text.tu;
     })
 
-    get_val("tp").then((res) => {
-        return res;
-    }).then((text) => {
+    get_val("tp").then((text) => {
         if (text.tp != undefined)
             tls_pass.value = text.tp;
     })
 
-    get_val("ti").then((res) => {
-        return res;
-    }).then((text) => {
+    get_val("ti").then((text) => {
         if (text.ti != undefined)
             tls_id.value = text.ti;
     })
 
-    get_val("td").then((res) => {
-        return res;
-    }).then((text) => {
+    get_val("td").then((text) => {
         if (text.td != undefined) {
             let rb = document.getElementsByName("tlsdest")
             rb[0].value = text.td;
         }
     })
 
-    get_val('premium_start_date').then((res) => {
-        return res;
-    }).then((sd) => {
-        if (sd.premium_start_date != undefined) {
+    get_val('premium_start_date').then((sd) => {
+        if (sd.premium_start_date != undefined)
             premium_start_date.value = sd.premium_start_date
-        }
     })
 
-    get_val('premium_start_time').then((res) => {
-        return res;
-    }).then((st) => {
-        if (st.premium_start_time != undefined) {
+    get_val('premium_start_time').then((st) => {
+        if (st.premium_start_time != undefined)
             premium_start_time.value = st.premium_start_time
-        }
     })
 
-    get_val('premium_last_date').then((res) => {
-        return res;
-    }).then((ld) => {
-        if (ld.premium_last_date != undefined) {
+    get_val('premium_last_date').then((ld) => {
+        if (ld.premium_last_date != undefined)
             premium_last_date.value = ld.premium_last_date
-        }
     })
 
-    get_val('premium_last_time').then((res) => {
-        return res;
-    }).then((lt) => {
-        if (lt.premium_last_time != undefined) {
+    get_val('premium_last_time').then((lt) => {
+        if (lt.premium_last_time != undefined)
             premium_last_time.value = lt.premium_last_time
-        }
     })
 
     get_val('premium_accept_prime').then((res) => {
-        return res;
-    }).then((lt) => {
-        if (lt.premium_accept_prime != undefined) {
-            premium_slots.checked = lt.premium_accept_prime
-        }
+        if (res.premium_accept_prime != undefined)
+            premium_slots.checked = res.premium_accept_prime
     })
 
-    get_val("premium_days").then((res) => {
-        return res;
-    }).then((text) => {
+    get_val("premium_days").then((text) => {
         if (text.premium_days != undefined) {
-            let premium_days = []
             const pd_split = text.premium_days.split('|')
             for (let i = 0; i < pd_split.length; i++) {
                 if (pd_split[i] != '') {
@@ -637,19 +593,11 @@ async function check_cf_blocked() {
 }
 
 async function tick() {
-    const membership = await get_membership();
-    if (membership == -1) {
-        await switch_windows(false);
-        return;
-    }
-
-    await check_functionality(membership);
+    await check_functionality(0);
     get_username().then(async (res) => {
         document.getElementById("sss_username").innerText = res;
-        let tt = document.getElementById('tier_type');
-        tt.innerText = tiers[Math.min(membership, 5)];
-        let td = document.getElementById('tier_desc');
-        td.innerText = tier_descs[Math.min(membership, 5)];
+        document.getElementById('tier_type').innerText = tiers[0];
+        document.getElementById('tier_desc').innerText = tier_descs[0];
 
         let gname = document.getElementById("gname");
         let gid = document.getElementById("gid");
@@ -670,18 +618,14 @@ async function tick() {
     })
 
     let last_scan_time = (await get_val("last_scan_time")).last_scan_time;
-    let last_scan_el = document.getElementById("last_scan");
-    last_scan_el.innerText = last_scan_time || "Not yet";
+    document.getElementById("last_scan").innerText = last_scan_time || "Not yet";
 
     let find_count = (await get_val("found_count")).found_count
     if (find_count == undefined)
         find_count = 0;
     let ac = document.getElementById("apt_count");
     ac.innerText = `${find_count} appointment(s)`;
-    if (find_count > 0)
-        setTextColor(ac, 'text-cyan-400');
-    else
-        setTextColor(ac, 'text-red-400');
+    setTextColor(ac, find_count > 0 ? 'text-cyan-400' : 'text-red-400');
 
     ///// Current booking display
     let booking_display = document.getElementById("current_booking_display");
@@ -707,24 +651,7 @@ async function tick() {
         setTextColor(stat, STATUS_COLOR_MAP[status_stored.color] || 'text-green-400');
     }
 
-    /// Agency stuff
-
-    let agent = document.getElementById("agent_yap");
-    if (membership == 5) {
-        agent.classList.remove('hidden');
-        let creds = document.getElementById("cred_count");
-        let u_creds = (await get_val("user_creds")).user_creds
-
-        creds.innerText = u_creds;
-
-        if (u_creds <= 0)
-            set_scanning(false); // No scanning allowed!
-    }
-    else
-        agent.classList.add('hidden');
-
-
-    ////
+    document.getElementById("agent_yap").classList.add('hidden');
 
     // Always keep the button enabled so users get feedback on click
     ss.removeAttribute('disabled');
