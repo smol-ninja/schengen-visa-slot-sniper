@@ -202,7 +202,8 @@ test_details.addEventListener("click", async (e) => {
         'fr': 'https://visas-fr.tlscontact.com',
         'be': 'https://visaonweb.diplomatie.be/Account/Login?ReturnUrl=%2Fen',
         'nl': 'https://visas-nl.tlscontact.com',
-        'it': 'https://visas-it.tlscontact.com'
+        'it': 'https://visas-it.tlscontact.com',
+        'cy': 'https://visas-cy.tlscontact.com'
     }
     let domain = locs[tls_dest.value];
 

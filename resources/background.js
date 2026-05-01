@@ -524,7 +524,7 @@ async function handle_appt_response(response) {
     return response.text();
 }
 
-/**Check appointments for both this month and next month */
+/**Check appointments for the current month and the next two months. */
 async function check_appts(domain, app_id) {
     const cur_month_url = `https://${domain}/en-us/${app_id}/workflow/appointment-booking`;
     const cur_date = new Date(Date.now())
@@ -560,40 +560,42 @@ async function check_appts(domain, app_id) {
         return false;
     }
 
-    // Repeat but with +1 month (getMonth is 0 indexed, tls is 1 indexed)
-    let next_month = cur_date.getMonth() + 2
-    let year = cur_date.getFullYear()
-    if (next_month > 12) {
-        year += 1
-        next_month = 1
-    }
-
-    log(`Current month: no appointments. Checking next month (${next_month}-${year})...`)
-    let next_month_url = `${cur_month_url}?month=${next_month}-${year}`
-    res = await fetch(next_month_url,
-        {
-            method: "GET",
-            headers: {
-                'RSC': 1,
-            },
-            host: domain,
-            referrer: next_month_url,
-            credentials: 'include',
-            priority: "high",
+    // Repeat for the next two months (getMonth is 0 indexed, tls is 1 indexed)
+    for (const offset of [1, 2]) {
+        let target_month = cur_date.getMonth() + 1 + offset
+        let target_year = cur_date.getFullYear()
+        while (target_month > 12) {
+            target_year += 1
+            target_month -= 12
         }
-    ).then(handle_appt_response)
 
-    if (res == 403) {
-        set_status("Refreshing Credentials", "yellow")
-        refresh_creds(domain);
-        return false;
+        log(`Checking month ${target_month}-${target_year}...`)
+        let next_month_url = `${cur_month_url}?month=${target_month}-${target_year}`
+        res = await fetch(next_month_url,
+            {
+                method: "GET",
+                headers: {
+                    'RSC': 1,
+                },
+                host: domain,
+                referrer: next_month_url,
+                credentials: 'include',
+                priority: "high",
+            }
+        ).then(handle_appt_response)
+
+        if (res == 403) {
+            set_status("Refreshing Credentials", "yellow")
+            refresh_creds(domain);
+            return false;
+        }
+        if (res != 429) {
+            let next_parse = await parse_appts(res, next_month_url, domain);
+            if (next_parse == 0)
+                log(`Month ${target_month}-${target_year} has no appointment data — skipping`)
+        }
     }
-    if (res != 429) {
-        let next_parse = await parse_appts(res, next_month_url, domain);
-        if (next_parse == 0)
-            log(`Next month (${next_month}-${year}) has no appointment data — skipping`)
-    }
-    log("Scan complete — both months checked.")
+    log("Scan complete — three months checked.")
     return true;
 }
 
